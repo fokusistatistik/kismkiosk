@@ -130,7 +130,11 @@ export default function KioskPage() {
             .then(stream => {
                 if (videoRef.current) videoRef.current.srcObject = stream;
             })
-            .catch(e => console.error(e));
+            .catch(e => {
+                console.error('Camera access error:', e);
+                // Silently fail - camera is optional for QR display
+                // User will still see QR codes, just won't capture photos
+            });
     }, []);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,7 +183,18 @@ export default function KioskPage() {
             // Success assumes Socket will trigger UI update.
             setIsManualOpen(false); // Close immediately, wait for socket.
         } catch (e: any) { // eslint-disable-line
-            alert(e.message);
+            // Show error in the main modal instead of alert
+            setIsManualOpen(false);
+            setModalData({
+                title: 'Giriş Başarısız',
+                subtitle: e.message,
+                bg: 'bg-red-600'
+            });
+            setViewState('ERROR_MODAL');
+
+            setTimeout(() => {
+                setViewState('IDLE');
+            }, 3000);
         }
     };
 

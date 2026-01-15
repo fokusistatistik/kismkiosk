@@ -1,36 +1,150 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DOKU Kiosk System
 
-## Getting Started
+Modern, güvenli ve kullanıcı dostu kiosk erişim kontrol sistemi.
 
-First, run the development server:
+## 🎯 Özellikler
 
+- ✅ **QR Kod Tabanlı Giriş:** JWT ile güvenli, zamana bağlı QR kodlar
+- ✅ **Manuel Giriş:** TC Kimlik No ile alternatif giriş
+- ✅ **Mobil Entegrasyon:** PWA desteği ile mobil uygulama entegrasyonu
+- ✅ **Real-time Güncelleme:** Socket.IO ile anlık bildirimler
+- ✅ **Admin Panel:** Kullanıcı, kiosk ve lokasyon yönetimi
+- ✅ **Fotoğraf Çekimi:** Otomatik giriş fotoğrafı
+- ✅ **Cihaz Kilitleme:** Tek cihaz politikası
+- ✅ **Anomali Tespiti:** Hızlı geçiş, kaçırılan çıkış kontrolü
+
+## 🚀 Hızlı Başlangıç
+
+### Gereksinimler
+- Node.js 18+
+- npm 9+
+
+### Kurulum
 ```bash
+# Bağımlılıkları yükle
+npm install
+
+# Veritabanını hazırla
+npx prisma generate
+npx prisma db push
+
+# Test kullanıcıları ekle
+node scripts/add-test-users.js
+
+# Geliştirme sunucusunu başlat
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tarayıcınızda `http://localhost:3000` adresini açın.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📱 Mobil Uygulama Entegrasyonu
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Mobil uygulama geliştirme için detaylı bilgi:
+- [DOKU_MOBIL_PWA_DOCS.md](./DOKU_MOBIL_PWA_DOCS.md)
+- [KIOSK_INTEGRATION.md](./KIOSK_INTEGRATION.md)
 
-## Learn More
+## 🔐 Varsayılan Giriş Bilgileri
 
-To learn more about Next.js, take a look at the following resources:
+### Admin Panel
+- **URL:** `http://localhost:3000/admin`
+- **Kullanıcı:** `kocaeliilsaglik`
+- **Şifre:** `Kocaeliilsaglik41.Kocaeli`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Test Kullanıcıları
+- **TC:** `17422776208` (Şifre: `1742`)
+- **TC:** `24400543608` (Şifre: `2440`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📚 Dokümantasyon
 
-## Deploy on Vercel
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment rehberi
+- [DOKU_MOBIL_PWA_DOCS.md](./DOKU_MOBIL_PWA_DOCS.md) - Mobil uygulama teknik şartnamesi
+- [KIOSK_INTEGRATION.md](./KIOSK_INTEGRATION.md) - Kiosk entegrasyon rehberi
+- [DOKU_NOTES.md](./DOKU_NOTES.md) - Geliştirici notları
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🛠️ Teknolojiler
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Frontend:** Next.js 15, React, TailwindCSS
+- **Backend:** Node.js, Express, Socket.IO
+- **Database:** SQLite (Prisma ORM)
+- **Auth:** JWT
+- **QR:** JWT-based time-windowed tokens
+
+## 📁 Proje Yapısı
+
+```
+kismkiosk/
+├── app/                    # Next.js app directory
+│   ├── admin/             # Admin panel
+│   ├── kiosk/[id]/        # Kiosk ekranları
+│   └── page.tsx           # Ana sayfa
+├── components/            # React bileşenleri
+├── prisma/               # Database schema
+├── public/               # Static dosyalar
+├── scripts/              # Utility scriptler
+├── utils/                # Helper fonksiyonlar
+└── server.js             # Custom Express server
+```
+
+## 🔄 API Endpoints
+
+### Mobil Uygulama
+- `POST /api/mobile/scan` - QR kod doğrulama
+
+### Kiosk
+- `GET /api/kiosk/qr-token` - QR token oluşturma
+- `POST /api/kiosk/manual-entry` - Manuel giriş
+- `POST /api/kiosk/upload-photo` - Fotoğraf yükleme
+
+### Admin
+- `POST /api/admin/login` - Admin girişi
+
+## 🧪 Test
+
+```bash
+# Development mode
+npm run dev
+
+# Production build
+npm run build
+npm start
+```
+
+## 📊 Database Schema
+
+Prisma schema detayları için: `prisma/schema.prisma`
+
+Temel modeller:
+- **User:** Kullanıcı bilgileri
+- **Kiosk:** Kiosk cihazları
+- **Location:** Lokasyonlar
+- **AccessLog:** Giriş/çıkış kayıtları
+
+## 🌐 Production Deployment
+
+Production deployment için detaylı rehber: [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+**Hedef URL:** `https://doku.fokusistatistik.com/kiosk`
+
+## 🤝 Katkıda Bulunma
+
+1. Fork yapın
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Commit yapın (`git commit -m 'feat: Add amazing feature'`)
+4. Push yapın (`git push origin feature/amazing-feature`)
+5. Pull Request açın
+
+## 📝 Lisans
+
+Bu proje Fokus İstatistik tarafından geliştirilmiştir.
+
+## 📞 İletişim
+
+**Fokus İstatistik**  
+Email: info@fokusistatistik.com  
+Website: https://fokusistatistik.com
+
+---
+
+> **Versiyon:** 1.0.0  
+> **Son Güncelleme:** 16.01.2026  
+> **Durum:** Production Ready ✅

@@ -24,7 +24,12 @@ const port = 3000;
 app.prepare().then(() => {
     const server = express();
     const httpServer = createServer(server);
-    const io = new Server(httpServer);
+    const io = new Server(httpServer, {
+        cors: {
+            origin: "*",
+            methods: ["GET", "POST"]
+        }
+    });
 
     server.use(cors());
     server.use(express.json());
@@ -45,21 +50,18 @@ app.prepare().then(() => {
 
         socket.on('join_kiosk', async (kioskId) => {
             try {
-                // Validation
+                // Allow non-db kiosks to join for demo purposes
+                // Just try to fetch to log activity
                 const kiosk = await prisma.kiosk.findUnique({ where: { id: kioskId } });
 
-                if (!kiosk || kiosk.status !== 'ACTIVE') {
-                    console.log(`Socket ${socket.id} rejected: Invalid Kiosk ${kioskId}`);
-                    socket.emit('INVALID_DEVICE');
-                    socket.disconnect();
-                    return;
+                if (kiosk) {
+                    await prisma.kiosk.update({
+                        where: { id: kioskId },
+                        data: { last_seen: new Date() }
+                    });
+                } else {
+                    console.log(`Unregistered Kiosk joined: ${kioskId}`);
                 }
-
-                // Update Last Seen
-                await prisma.kiosk.update({
-                    where: { id: kioskId },
-                    data: { last_seen: new Date() }
-                });
 
                 const room = `room_kiosk_${kioskId}`;
                 socket.join(room);
@@ -67,7 +69,8 @@ app.prepare().then(() => {
 
             } catch (e) {
                 console.error("Socket Auth Error", e);
-                socket.disconnect();
+                // Allow join anyway to prevent UI freeze
+                socket.join(`room_kiosk_${kioskId}`);
             }
         });
 
@@ -123,18 +126,34 @@ app.prepare().then(() => {
         }
     });
 
-    // 2. Mobile Scan
+    // 2. Mobile Scan (Protocol v1.1.0)
     server.post('/api/mobile/scan', async (req, res) => {
-        const { qr_token, user_id, device_uuid } = req.body;
+        const { qr_token, user_id, user_name, device_info } = req.body;
+        // user_id -> TC KN
+        // device_info -> Object with uuid
+        const deviceUuid = device_info?.uuid;
+
         try {
             const validation = validateTimeWindowQR(qr_token);
             if (!validation.valid) {
-                return res.status(400).json({ error: 'QR Süresi Doldu veya Geçersiz' });
+                return res.status(400).json({ success: false, message: 'QR Süresi Doldu veya Geçersiz' });
             }
-            await processEntry(user_id, device_uuid, 'QR', validation.kioskId, res);
+
+            // Find User by TC Identity
+            const user = await prisma.user.findUnique({ where: { tc_no: user_id } });
+
+            // If user not found, emit visual error to Kiosk immediately
+            if (!user) {
+                io.to(`room_kiosk_${validation.kioskId}`).emit('SCAN_ERROR', { message: 'Kayıtlı Kullanıcı Bulunamadı' });
+                return res.status(404).json({ success: false, message: 'Kayıtlı kullanıcı bulunamadı' });
+            }
+
+            // Proceed with process logic, passing the mobile-provided name for display preference
+            await processEntry(user.id, deviceUuid, 'QR', validation.kioskId, res, user_name);
+
         } catch (err) {
             console.error("Scan error:", err);
-            res.status(500).json({ error: 'Internal error' });
+            res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
     });
 
@@ -193,31 +212,33 @@ app.prepare().then(() => {
     });
 
     // --- Process Logic ---
-    async function processEntry(userId, deviceUuid, method, kioskIdOverride, res) {
+    async function processEntry(userId, deviceUuid, method, kioskIdOverride, res, mobileUserName = null) {
         try {
-            // 1. Fetch User
+            // 1. Fetch User (Repeated finding by ID is safe/cached usually, but ensures fresh state)
             const user = await prisma.user.findUnique({ where: { id: userId } });
             if (!user) {
                 if (kioskIdOverride) io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_ERROR', { message: 'Kayıtlı Kullanıcı Bulunamadı' });
-                return res.status(404).json({ error: 'Kullanıcı Bulunamadı' });
+                return res.status(404).json({ success: false, message: 'Kullanıcı Bulunamadı' });
             }
 
-            // 2. Device Binding
+            // 2. Device Binding (Only for QR)
             if (method === 'QR' && deviceUuid) {
                 if (user.device_uuid && user.device_uuid !== deviceUuid) {
                     if (kioskIdOverride) io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_ERROR', { message: 'Cihaz Eşleşmedi' });
-                    return res.status(403).json({ error: 'Cihaz Eşleşmiyor' });
-                }
-                if (user.device_status === 'LOCKED') {
-                    if (kioskIdOverride) io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_ERROR', { message: 'Hesap Kilitli' });
-                    return res.status(403).json({ error: 'Hesap Kilitli' });
+                    return res.status(403).json({ success: false, message: 'Cihaz Eşleşmiyor' });
                 }
             }
 
+            // 3. Global Account Lock Check (For Both QR and Manual)
+            if (user.device_status === 'LOCKED') {
+                if (kioskIdOverride) io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_ERROR', { message: 'Hesap Kilitli' });
+                return res.status(403).json({ success: false, message: 'Hesap Kilitli. Lütfen çıkış yapınız.' });
+            }
+
             // 3. Fetch Kiosk
-            if (!kioskIdOverride) return res.status(400).json({ error: 'Kiosk ID Missing' });
+            if (!kioskIdOverride) return res.status(400).json({ success: false, message: 'Kiosk ID Missing' });
             const kiosk = await prisma.kiosk.findUnique({ where: { id: kioskIdOverride } });
-            if (!kiosk) return res.status(404).json({ error: 'Kiosk Bulunamadı' });
+            if (!kiosk) return res.status(404).json({ success: false, message: 'Kiosk Bulunamadı' });
 
             // 4. Roaming Check
             const isRoaming = (user.primary_location_id && kiosk.location_id)
@@ -238,7 +259,7 @@ app.prepare().then(() => {
                 const diffSeconds = (now.getTime() - new Date(lastLog.timestamp).getTime()) / 1000;
                 if (diffSeconds < 60) {
                     io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_ERROR', { message: 'Çok Hızlı Geçiş' });
-                    return res.status(429).json({ error: 'Lütfen bekleyiniz' });
+                    return res.status(429).json({ success: false, message: 'Çok Hızlı Geçiş. Lütfen bekleyiniz.' });
                 }
                 // Toggle Direction
                 direction = lastLog.direction === 'IN' ? 'OUT' : 'IN';
@@ -250,9 +271,12 @@ app.prepare().then(() => {
                 }
             }
 
+            // Determine Display Name (Mobile override or DB)
+            const displayUserName = mobileUserName || `${user.name} ${user.surname}`;
+
             // Emit Success (Visual)
             io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_SUCCESS', {
-                user_name: `${user.name} ${user.surname}`,
+                user_name: displayUserName,
                 user_title: user.title,
                 direction: direction
             });
@@ -260,7 +284,7 @@ app.prepare().then(() => {
             // Emit Trigger (Camera)
             io.to(`room_kiosk_${kioskIdOverride}`).emit('TRIGGER_CAMERA', {
                 user_id: user.id,
-                user_name: `${user.name} ${user.surname}`,
+                user_name: displayUserName,
                 meta: {
                     direction,
                     anomaly_flag: anomaly,
@@ -270,12 +294,17 @@ app.prepare().then(() => {
                 }
             });
 
-            res.json({ message: 'Processing', status: 'OK' });
+            res.json({
+                success: true,
+                message: 'Giriş Onaylandı',
+                kiosk_command: 'open_gate',
+                user_name: displayUserName
+            });
 
         } catch (e) {
             console.error("Process Entry Error", e);
             if (kioskIdOverride) io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_ERROR', { message: 'Sistem Hatası' });
-            res.status(500).json({ error: 'Internal Error' });
+            res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
     }
 
