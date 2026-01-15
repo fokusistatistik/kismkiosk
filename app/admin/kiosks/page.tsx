@@ -154,8 +154,8 @@ export default function KioskPage() {
                                 </td>
                                 <td className="p-4">
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${kiosk.status === 'ACTIVE'
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-red-100 text-red-700'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-red-100 text-red-700'
                                         }`}>
                                         <span className={`w-2 h-2 rounded-full ${kiosk.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'}`} />
                                         {kiosk.status === 'ACTIVE' ? 'Aktif' : 'Pasif'}
@@ -209,10 +209,11 @@ export default function KioskPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Konum</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Konum *</label>
                                 <select
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.location_id}
+                                    required
                                     onChange={e => setFormData({ ...formData, location_id: e.target.value })}
                                 >
                                     <option value="">Konum Seçiniz</option>
@@ -223,13 +224,12 @@ export default function KioskPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Kiosk ID (UUID)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Kiosk ID (UUID) *</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
                                         required
-                                        readOnly={isEditing}
-                                        className={`flex-1 px-4 py-2 rounded-lg border border-gray-300 outline-none font-mono text-sm ${isEditing ? 'bg-gray-100 text-gray-500' : 'focus:ring-2 focus:ring-blue-500'}`}
+                                        className="flex-1 px-4 py-2 rounded-lg border border-gray-300 outline-none font-mono text-sm focus:ring-2 focus:ring-blue-500"
                                         value={formData.id}
                                         onChange={e => setFormData({ ...formData, id: e.target.value })}
                                         placeholder="Oto-Oluştur veya Giriniz"

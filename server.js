@@ -12,7 +12,7 @@ const cors = require('cors');
 const { generateTimeWindowQR, validateTimeWindowQR } = require('./utils/qrGenerator');
 
 const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
+const app = next({ dev, turbo: false });
 const handle = app.getRequestHandler();
 
 console.log('Loading env vars...');
@@ -87,14 +87,39 @@ app.prepare().then(() => {
     });
 
     // 1. Generate QR Token
-    server.get('/api/kiosk/qr-token', (req, res) => {
-        const { kioskId } = req.query;
+    // 1. Generate QR Token (Relaxed Mode)
+    server.get('/api/kiosk/qr-token', async (req, res) => {
+        const { kioskId, name, locationId } = req.query;
         if (!kioskId) return res.status(400).json({ error: 'Missing kioskId' });
+
         try {
-            const token = generateTimeWindowQR(kioskId);
-            res.json({ token });
+            // Try fetch from DB, but don't enforce existence
+            let kioskName = name || 'Bilinmeyen Cihaz';
+            let kioskLoc = locationId || 'UNKNOWN';
+
+            const kiosk = await prisma.kiosk.findUnique({
+                where: { id: kioskId },
+                select: { name: true, location_id: true }
+            });
+
+            if (kiosk) {
+                kioskName = kiosk.name;
+                kioskLoc = kiosk.location_id || 'UNKNOWN';
+            }
+
+            // Always generate token
+            const token = generateTimeWindowQR(
+                kioskId,
+                kioskLoc,
+                kioskName
+            );
+
+            res.json({ token, kioskName });
         } catch (e) {
-            res.status(500).json({ error: e.message });
+            console.error("QR Gen Error:", e);
+            // Fallback generation on error
+            const token = generateTimeWindowQR(kioskId, locationId || 'UNKNOWN', name || 'Cihaz');
+            res.json({ token, kioskName: name || 'Cihaz' });
         }
     });
 
@@ -172,7 +197,10 @@ app.prepare().then(() => {
         try {
             // 1. Fetch User
             const user = await prisma.user.findUnique({ where: { id: userId } });
-            if (!user) return res.status(404).json({ error: 'Kullanıcı Bulunamadı' });
+            if (!user) {
+                if (kioskIdOverride) io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_ERROR', { message: 'Kayıtlı Kullanıcı Bulunamadı' });
+                return res.status(404).json({ error: 'Kullanıcı Bulunamadı' });
+            }
 
             // 2. Device Binding
             if (method === 'QR' && deviceUuid) {
@@ -251,7 +279,7 @@ app.prepare().then(() => {
         }
     }
 
-    server.all('*', (req, res) => handle(req, res));
+    server.use((req, res) => handle(req, res));
     httpServer.listen(port, (err) => {
         if (err) throw err;
         console.log(`> Server ready on http://localhost:${port}`);

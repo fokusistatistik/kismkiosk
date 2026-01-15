@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Users, Activity, Settings } from 'lucide-react';
+import { Users, Activity, Settings, Home, Monitor, Building2 } from 'lucide-react';
 
 export default function AdminLayout({
     children,
@@ -16,6 +16,18 @@ export default function AdminLayout({
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2">
+                    <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300 transition-colors">
+                        <Home className="w-5 h-5" />
+                        Ana Sayfa
+                    </Link>
+                    <Link href="/admin/kiosks" className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300 transition-colors">
+                        <Monitor className="w-5 h-5" />
+                        Cihaz Yönetimi
+                    </Link>
+                    <Link href="/admin/locations" className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300 transition-colors">
+                        <Building2 className="w-5 h-5" />
+                        Kurum Yönetimi
+                    </Link>
                     <Link href="/admin/logs" className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300 transition-colors">
                         <Activity className="w-5 h-5" />
                         Canlı Loglar
