@@ -131,11 +131,11 @@ app.prepare().then(() => {
         }
     });
 
-    // 2. Mobile Scan (Protocol v1.1.0)
+    // 2. Mobile Scan (Protocol v1.1.0 - Flexible Matching)
     server.post('/api/mobile/scan', async (req, res) => {
-        const { qr_token, user_id, user_name, device_info } = req.body;
-        // user_id -> TC KN
-        // device_info -> Object with uuid
+        const { qr_token, user_id, user_tc, user_name, device_info } = req.body;
+        // user_id or user_tc -> TC KN
+        const tcNo = user_tc || user_id;
         const deviceUuid = device_info?.uuid;
 
         try {
@@ -144,16 +144,15 @@ app.prepare().then(() => {
                 return res.status(400).json({ success: false, message: 'QR Süresi Doldu veya Geçersiz' });
             }
 
-            // Find User by TC Identity
-            const user = await prisma.user.findUnique({ where: { tc_no: user_id } });
+            // Find User by TC Identity (Primary)
+            const user = await prisma.user.findUnique({ where: { tc_no: tcNo } });
 
-            // If user not found, emit visual error to Kiosk immediately
             if (!user) {
                 io.to(`room_kiosk_${validation.kioskId}`).emit('SCAN_ERROR', { message: 'Kayıtlı Kullanıcı Bulunamadı' });
                 return res.status(404).json({ success: false, message: 'Kayıtlı kullanıcı bulunamadı' });
             }
 
-            // Proceed with process logic, passing the mobile-provided name for display preference
+            // Proceed with process logic, deviceUuid is logged but not blocking
             await processEntry(user.id, deviceUuid, 'QR', validation.kioskId, res, user_name);
 
         } catch (err) {
@@ -226,12 +225,13 @@ app.prepare().then(() => {
                 return res.status(404).json({ success: false, message: 'Kullanıcı Bulunamadı' });
             }
 
-            // 2. Device Binding (Only for QR)
+            // 2. Device Update (Flexible: Log it but don't block)
             if (method === 'QR' && deviceUuid) {
-                if (user.device_uuid && user.device_uuid !== deviceUuid) {
-                    if (kioskIdOverride) io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_ERROR', { message: 'Cihaz Eşleşmedi' });
-                    return res.status(403).json({ success: false, message: 'Cihaz Eşleşmiyor' });
-                }
+                // Update device uuid to the latest one used
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { device_uuid: deviceUuid }
+                });
             }
 
             // 3. Global Account Lock Check (For Both QR and Manual)
