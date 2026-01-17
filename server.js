@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 require('dotenv').config();
+/* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
@@ -19,7 +19,7 @@ console.log('Loading env vars...');
 console.log('Using SQLite Database');
 
 const prisma = new PrismaClient();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.prepare().then(() => {
     const server = express();
@@ -316,6 +316,6 @@ app.prepare().then(() => {
     server.use((req, res) => handle(req, res));
     httpServer.listen(port, (err) => {
         if (err) throw err;
-        console.log(`> Server ready on http://localhost:${port}`);
+        console.log(`> Server running on port: ${port}`);
     });
 });

@@ -86,7 +86,7 @@ Uygulama artık `kiosk.fokusistatistik.com` üzerinden root yolunda çalışacak
 
 ```nginx
 location / {
-    proxy_pass http://localhost:3000;
+    proxy_pass http://localhost:3011;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection 'upgrade';
@@ -96,7 +96,7 @@ location / {
 
 # Socket.io desteği (Kritik)
 location /socket.io/ {
-    proxy_pass http://localhost:3000/socket.io/;
+    proxy_pass http://localhost:3011/socket.io/;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";

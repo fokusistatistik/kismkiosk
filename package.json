@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "nodemon server.js --ignore public/",
-    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" NEXT_USE_WEBPACK=true next build",
-    "start": "node server.js",
+    "build": "cross-env NODE_OPTIONS='--max-old-space-size=2048' next build",
+    "start": "NODE_ENV=production node server.js",
     "lint": "eslint"
   },
   "dependencies": {

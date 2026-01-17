@@ -36,3 +36,11 @@ next-env.d.ts
 # uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# deployment
+/standalone-package/
+/kiosk.zip
+build-error.log
+error.txt
+node_modules
+.env
