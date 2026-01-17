@@ -134,12 +134,31 @@ app.prepare().then(() => {
     // 2. Mobile Scan (Protocol v1.1.0 - Flexible Matching)
     server.post('/api/mobile/scan', async (req, res) => {
         const { qr_token, user_id, user_tc, user_name, device_info } = req.body;
-        // user_id or user_tc -> TC KN
         const tcNo = user_tc || user_id;
         const deviceUuid = device_info?.uuid;
+        const testMode = process.env.TEST_MODE === 'true';
 
         try {
             const validation = validateTimeWindowQR(qr_token);
+
+            // TEST MODE BYPASS
+            if (testMode) {
+                console.log(`🧪 TEST MODE: Bypassing checks for TC: ${tcNo}`);
+                const kioskId = validation.kioskId || 'kiosk_ana_a'; // Fallback for testing
+
+                // Still notify the kiosk even in test mode
+                io.to(`room_kiosk_${kioskId}`).emit('SCAN_SUCCESS', {
+                    user_name: user_name || "TEST USER",
+                    user_title: "Test Modu Aktif",
+                    direction: "IN"
+                });
+
+                return res.json({
+                    success: true,
+                    message: "TEST MODU: Bağlantı Başarılı, Geçiş Onaylandı!"
+                });
+            }
+
             if (!validation.valid) {
                 return res.status(400).json({ success: false, message: 'QR Süresi Doldu veya Geçersiz' });
             }

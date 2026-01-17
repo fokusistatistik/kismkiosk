@@ -45,7 +45,13 @@ function validateTimeWindowQR(token) {
             };
         }
 
-        return { valid: false, reason: `Expired (${diff}s)` };
+        return {
+            valid: false,
+            reason: `Expired (${diff}s)`,
+            kioskId: decoded.kid,
+            locationId: decoded.loc,
+            kioskName: decoded.nam
+        };
 
     } catch (e) {
         return { valid: false, reason: e.message };
