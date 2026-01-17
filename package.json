@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon server.js --ignore public/",
-    "build": "next build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" NEXT_USE_WEBPACK=true next build",
     "start": "node server.js",
     "lint": "eslint"
   },
@@ -18,8 +18,7 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.562.0",
     "multer": "^2.0.2",
-    "next": "16.1.2",
-    "prisma": "^5.10.2",
+    "next": "15.1.5",
     "qrcode.react": "^4.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -39,9 +38,11 @@
     "@types/react-dom": "^19",
     "@types/socket.io": "^3.0.1",
     "@types/uuid": "^10.0.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.2",
+    "eslint-config-next": "15.1.5",
     "nodemon": "^3.1.11",
+    "prisma": "^5.10.2",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5"

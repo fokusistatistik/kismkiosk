@@ -1,8 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
+  webpack: (config) => {
+    // Force webpack usage
+    return config;
+  },
   devIndicators: {
-    // @ts-ignore - buildActivity is valid but types might be outdated
+    // @ts-ignore
     buildActivity: false
   }
 };

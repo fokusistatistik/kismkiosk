@@ -1,74 +1,77 @@
-# Kiosk Sistemi Entegrasyon ve Kullanım Kılavuzu
+# 📟 DOKU Kiosk - Teknik Entegrasyon Rehberi
 
-Bu doküman, Kiosk sisteminin çalışma mantığını, Mobil Uygulama (PWA) entegrasyonu için gerekli teknik detayları ve cihaz yönetim süreçlerini açıklar.
+Bu doküman, Kiosk sisteminin çalışma mantığını, Mobil Uygulama (PWA) entegrasyonu ve API detaylarını açıklar.
 
-## 1. Sistem Özeti
-Kiosk sistemi, personelin kuruma giriş/çıkışlarını QR kod taratarak doğruladığı bir yapıdır.
-- **Kiosk Cihazı:** Sabit durur, sürekli değişen, imzalı ve zaman sınırlı bir QR kod üretir.
-- **Mobil Uygulama:** Personelin telefonundaki uygulama bu QR kodu okur, doğrular ve sunucuya bildirir.
-- **Sunucu:** Bildirimi alır, veritabanına işler ve Kiosk ekranına "Giriş Başarılı" sinyali (Socket.io) gönderir.
+## ⚙️ Sistem Çalışma Mantığı
 
-## 2. Mobil Uygulama (PWA) Geliştirici Rehberi
+1.  **Kiosk:** Sürekli değişen, imzalı JWT tabanlı bir QR kod üretir.
+2.  **Mobil:** QR kodu tarar, içeriği doğrular ve sunucuya POST eder.
+3.  **Sunucu:** Girişi doğrular, veritabanına işler ve Kiosk ekranına Real-time (Socket.io) sinyal gönderir.
 
-Mobil uygulamanın temel görevi, Kiosk ekranındaki QR kodunu okumak, içindeki veriyi ayrıştırmak ve sunucuya iletmektir.
+---
 
-### 2.1. QR Kod Yapısı (JWT)
-Kiosk ekranındaki QR kod, **JWT (JSON Web Token)** formatındadır. Şifreli değildir, ancak sunucu tarafından **imzalanmıştır (HMAC SHA256)**. Bu sayede mobil uygulama içeriği okuyabilir (cihaz adını ekrana basabilir) ancak sahte QR üretilemez.
+## 📱 Mobil Uygulama Entegrasyonu
 
-**Örnek Token (Decode Edilmiş Hali):**
+### 1. API Bilgileri
+- **Endpoint:** `POST /api/mobile/scan`
+- **İçerik:** `application/json`
+
+**Örnek JSON Body:**
 ```json
 {
-  "kid": "kiosk-urn-01",      // Kiosk ID (Benzersiz Kimlik)
-  "loc": "konum-ana-bina",    // Lokasyon/Kurum ID
-  "nam": "Ana Giris Turnike", // Görünür İsim (Kullanıcıya gösterilecek)
-  "iat": 1705345678           // Oluşturulma Zamanı (Unix Timestamp - Saniye)
+  "qr_token": "eyJhbGciOi...",      // Kiosk ekranındaki QR string
+  "user_id": "17422776208",         // Kullanıcının TC No veya UUID'si
+  "device_info": {                  // Opsiyonel güvenlik bilgileri
+    "uuid": "device-uuid-123",
+    "platform": "ios/android"
+  }
 }
 ```
 
-### 2.2. Mobil Uygulama Akışı
-1.  **Kamerayı Aç & Tara:** Uygulama kamerayı açar ve QR kodu algılar.
-2.  **JWT Decode:** Okunan QR verisi (eyJ...) bir JWT kütüphanesi (veya base64 decode) ile açılır.
-3.  **Kullanıcı Onayı (Opsiyonel ama Önerilir):** Ekranda `nam` (İsim) alanı gösterilir.
-    > "Ana Giris Turnike cihazından giriş yapıyorsunuz. Onaylıyor musunuz?"
-4.  **Sunucuya Gönder:** Kullanıcı onaylarsa (veya otomatik), token sunucuya POST edilir.
+### 2. QR Kod Yapısı (JWT Payload)
+Uygulama QR kodu çözdüğünde şu verilere erişebilir:
+- `kid`: Kiosk Benzersiz ID
+- `nam`: Cihazın Görünür İsmi (Örn: "Ana Giriş Turnike")
+- `iat`: Oluşturulma Zamanı (Unix Timestamp)
 
-**API Endpoint:**
-- **URL:** `/api/mobile/scan`
-- **Method:** `POST`
-- **Body:**
-```json
-{
-  "qr_token": "eyJhbGl...",      // Okunan orijinal QR string
-  "user_id": "user_uuid_123",    // İşlemi yapan personelin ID'si
-  "device_uuid": "cep_tlf_uuid"  // Personelin telefonunun benzersiz ID'si (Opsiyonel güvenlik için)
-}
-```
+---
 
-### 2.3. Hata Yönetimi
-- **Süre Aşımı:** QR kodlar yaklaşık 20-30 saniye geçerlidir. Eğer `iat` değeri çok eskiyse sunucu 400 döner. Uygulama "QR Süresi Doldu, Lütfen Yenileyin" diyebilir.
-- **Cihaz Doğrulama:** Eğer `kid` veritabanında yoksa veya pasifse hata döner.
+## 🧪 Test Verileri ve Senaryolar
 
-## 3. Kiosk Cihaz Yönetimi
+### Test Kullanıcıları
+| TC No | Şifre | Ad Soyad |
+|-------|-------|----------|
+| `17422776208` | `1742` | Test Kullanıcı 1 |
+| `24400543608` | `2440` | Test Kullanıcı 2 |
 
-### 3.1. Yeni Kiosk Kurulumu (Önemli)
-Yeni bir cihazı (tablet/ekran) kiosk yapmak için **Auth (Login)** gerekmez.
-1.  Ana Sayfada **"Kiosk Modu (Başlat)"** butonuna basılır.
-2.  Açılan ekranda:
-    - **Kiosk ID:** Cihaza benzersiz bir ID verilir (örn: `fokus-giris-01`).
-    - **Görünür İsim:** İnsanların anlayacağı bir isim (örn: `Fokus Ana Kapı`).
-3.  **Başlat** denilir.
-4.  Cihaz bu bilgileri hafızasına (LocalStorage) kaydeder ve sürekli QR üretmeye başlar.
-5.  **Not:** Bu ID veritabanında tanımlı olmasa bile sistem çalışır ve QR üretir. Ancak tam raporlama için Admin panelden bu ID ile bir kayıt oluşturulması önerilir.
+### Başarılı Giriş Akışı
+1. Mobil uygulama API'ye isteği gönderir.
+2. Sunucu `200 OK` döner: `{ "success": true, "user_name": "..." }`.
+3. Kiosk ekranı anlık olarak yeşile döner ve "Hoşgeldiniz" mesajı çıkar.
 
-### 3.2. Kiosk Sıfırlama / Çıkış (Backdoor)
-Bir cihazı Kiosk modundan çıkarmak ve ana sayfaya döndürmek için:
-1.  Kiosk ekranındaki **Manuel Giriş (TC ile)** butonuna basılır.
-2.  Gelen ekranda şu bilgiler girilir:
-    - **TC No:** `00000000000` (11 adet sıfır)
-    - **Şifre:** `0000` (4 adet sıfır)
-3.  Giriş butonuna basıldığında onay sorar ve cihazı sıfırlar (Ana sayfaya atar).
+---
 
-## 4. Teknik Notlar
+## 🛠️ Kiosk Cihaz Yönetimi
 
-- **Socket.io:** Kiosk sayfası sürekli sunucuya Socket ile bağlıdır (`room_kiosk_KIOSKID`). Mobil uygulamadan `/api/mobile/scan` isteği başarılı olduğunda, sunucu o odaya `SCAN_SUCCESS` event'i yollar ve Kiosk ekranı yeşil olur/personel ismini gösterir.
-- **Güvenlik:** `JWT_SECRET` anahtarı sunucuda saklıdır (`.env` dosyasında). Bu anahtar değiştirilirse tüm eski QR'lar geçersiz olur.
+### Yeni Cihaz Kurulumu
+1. Ana sayfadan **"Kiosk Modu"** butonuna basın.
+2. Cihaza bir isim (Örn: "Laboratuvar Giriş") ve ID verin.
+3. Cihaz yerel hafızaya bu bilgiyi kaydeder ve çalışmaya başlar.
+
+### Kiosk Sıfırlama (Backdoor)
+Yanlışlıkla kiosk moduna girilen bir cihazı kurtarmak için:
+- **Manuel Giriş** ekranına gidin.
+- **TC:** `00000000000` (11 adet sıfır)
+- **Şifre:** `0000` (4 adet sıfır) girerek "Çıkış Yap" deyin.
+
+---
+
+## 📡 Real-time Haberleşme (Socket.io)
+
+Kiosk ekranı `room_kiosk_[KIOSK_ID]` odasını dinler. 
+- `SCAN_SUCCESS`: Giriş başarılı mesajı ve kullanıcı adı.
+- `SCAN_ERROR`: Hata mesajı.
+
+---
+**Son Güncelleme:** 16.01.2026 01:40  
+**Geliştirici Notu:** Backend tüm CORS ve Timeout testlerinden geçmiştir. 🟢

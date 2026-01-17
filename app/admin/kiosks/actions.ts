@@ -1,8 +1,9 @@
 'use server';
 
-import { PrismaClient, KioskStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { v4 as uuidv4 } from 'uuid';
+import type { KioskStatus } from '@/types/prisma-enums';
 
 const prisma = new PrismaClient();
 
