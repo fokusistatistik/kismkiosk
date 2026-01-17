@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
 }
 
@@ -12,26 +9,26 @@ datasource db {
 }
 
 model User {
-  id                  String       @id @default(uuid())
+  id                  String      @id @default(uuid())
   name                String
   surname             String
   title               String?
-  tc_no               String       @unique
+  tc_no               String      @unique
   password_hash       String
   device_uuid         String?
-  device_status       String       @default("OPEN") // Enum: LOCKED, OPEN
-  role                String       @default("USER") // Enum: ADMIN, USER
+  device_status       String      @default("OPEN")
+  role                String      @default("USER")
   primary_location_id String?
-  primary_location    Location?    @relation(fields: [primary_location_id], references: [id])
   logs                AccessLog[]
+  primary_location    Location?   @relation(fields: [primary_location_id], references: [id])
 }
 
 model Location {
-  id    String      @id @default(uuid())
-  name  String
-  users User[]
+  id     String      @id @default(uuid())
+  name   String
+  logs   AccessLog[]
   kiosks Kiosk[]
-  logs  AccessLog[]
+  users  User[]
 }
 
 model Kiosk {
@@ -41,32 +38,26 @@ model Kiosk {
   location_long Float?
   secret_key    String
   location_id   String?
-  location      Location?   @relation(fields: [location_id], references: [id])
-  logs          AccessLog[]
-
-  status        String      @default("ACTIVE") // Enum: ACTIVE, INACTIVE
+  status        String      @default("ACTIVE")
   last_seen     DateTime?
+  logs          AccessLog[]
+  location      Location?   @relation(fields: [location_id], references: [id])
 }
 
 model AccessLog {
-  id              String       @id @default(uuid())
-  user_id         String
-  user            User         @relation(fields: [user_id], references: [id])
-  
-  location_id     String?
-  location        Location?    @relation(fields: [location_id], references: [id])
-
-  kiosk_id        String
-  kiosk           Kiosk        @relation(fields: [kiosk_id], references: [id])
-
-  timestamp       DateTime     @default(now())
-  
-  direction       String       // Enum: IN, OUT
-  anomaly_flag    String?      // Enum: MISSED_EXIT, LATE_EXIT
-  is_roaming      Boolean      @default(false)
-  entry_method    String       @default("QR") // Enum: QR, MANUAL
-  
-  photo_url       String?
-  status          String       // Enum: SUCCESS, FAILED
+  id               String    @id @default(uuid())
+  user_id          String
+  location_id      String?
+  kiosk_id         String
+  timestamp        DateTime  @default(now())
+  direction        String
+  anomaly_flag     String?
+  is_roaming       Boolean   @default(false)
+  entry_method     String    @default("QR")
+  photo_url        String?
+  status           String
   rejection_reason String?
+  kiosk            Kiosk     @relation(fields: [kiosk_id], references: [id])
+  location         Location? @relation(fields: [location_id], references: [id])
+  user             User      @relation(fields: [user_id], references: [id])
 }

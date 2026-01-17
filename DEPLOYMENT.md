@@ -19,9 +19,9 @@ Sunucu kaynaklarını tüketmemek için build işlemini kendi bilgisayarınızda
 `.env` dosyasındaki API adreslerinin canlı sunucuyu gösterdiğinden emin olun:
 
 ```bash
-NEXT_PUBLIC_API_URL=https://kiosk.fokusistatistik.com
-NEXT_PUBLIC_APP_URL=https://kiosk.fokusistatistik.com
-NEXT_PUBLIC_SOCKET_URL=https://kiosk.fokusistatistik.com
+NEXT_PUBLIC_API_URL=https://kiosk.fokusistatistik.com/kiosk/api
+NEXT_PUBLIC_APP_URL=https://kiosk.fokusistatistik.com/kiosk
+NEXT_PUBLIC_SOCKET_URL=https://kiosk.fokusistatistik.com/kiosk
 ```
 
 ### Build Alınması
@@ -85,8 +85,8 @@ npm start
 Uygulama artık `kiosk.fokusistatistik.com` üzerinden root yolunda çalışacaktır:
 
 ```nginx
-location / {
-    proxy_pass http://localhost:3011;
+location /kiosk/ {
+    proxy_pass http://localhost:3011/kiosk/;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection 'upgrade';
@@ -94,9 +94,9 @@ location / {
     proxy_cache_bypass $http_upgrade;
 }
 
-# Socket.io desteği (Kritik)
-location /socket.io/ {
-    proxy_pass http://localhost:3011/socket.io/;
+# Socket.io desteği (Kritik - basePath ile uyumlu)
+location /kiosk/socket.io/ {
+    proxy_pass http://localhost:3011/kiosk/socket.io/;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";

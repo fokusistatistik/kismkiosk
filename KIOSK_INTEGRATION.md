@@ -13,7 +13,7 @@ Bu doküman, Kiosk sisteminin çalışma mantığını, Mobil Uygulama (PWA) ent
 ## 📱 Mobil Uygulama Entegrasyonu
 
 ### 1. API Bilgileri
-- **Endpoint:** `POST /api/mobile/scan`
+- **Endpoint:** `POST /kiosk/api/mobile/scan`
 - **İçerik:** `application/json`
 
 **Örnek JSON Body:**

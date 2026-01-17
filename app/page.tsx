@@ -22,7 +22,7 @@ export default function Home() {
     const resetTimer = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        router.push(`/kiosk/${lastKioskId}`);
+        router.push(`/${lastKioskId}`);
       }, 10000); // 10 seconds
     };
 
@@ -39,7 +39,7 @@ export default function Home() {
   const handleKioskMode = () => {
     const lastKioskId = localStorage.getItem('lastKioskId');
     if (lastKioskId) {
-      router.push(`/kiosk/${lastKioskId}`);
+      router.push(`/${lastKioskId}`);
       return;
     }
     // No auth required, just open setup
@@ -53,7 +53,7 @@ export default function Home() {
     localStorage.setItem('lastKioskId', inputKioskId);
     localStorage.setItem('kioskName', inputKioskName);
 
-    router.push(`/kiosk/${inputKioskId}`);
+    router.push(`/${inputKioskId}`);
   };
 
   return (

@@ -18,7 +18,6 @@ export default function KioskPage() {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [viewState, setViewState] = useState<'IDLE' | 'SUCCESS_MODAL' | 'ERROR_MODAL'>('IDLE');
     const [modalData, setModalData] = useState<{ title: string, subtitle?: string, footer?: string, bg?: string }>({ title: '' });
-    const [qrSize, setQrSize] = useState(350);
 
     // Manual Modal State
     const [isManualOpen, setIsManualOpen] = useState(false);
@@ -36,8 +35,6 @@ export default function KioskPage() {
         }
     }, [kioskId]);
 
-    // No manual JS size calculation needed, handled via CSS
-
     // Clock
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -51,7 +48,9 @@ export default function KioskPage() {
             const localName = localStorage.getItem('kioskName') || '';
             const queryName = localName ? `&name=${encodeURIComponent(localName)}` : '';
 
-            const res = await fetch(`/api/kiosk/qr-token?kioskId=${kioskId}${queryName}`);
+            // Note: with basePath /kiosk, this fetch to /api might absolute to root or respect base.
+            // Next.js client-side fetch usually respects basePath if using relative paths.
+            const res = await fetch(`/kiosk/api/kiosk/qr-token?kioskId=${kioskId}${queryName}`);
             const data = await res.json();
             if (data.token) {
                 setToken(data.token);
@@ -73,7 +72,7 @@ export default function KioskPage() {
     // Socket Logic
     useEffect(() => {
         // Connect to same host
-        const socket = io({ path: '/socket.io' });
+        const socket = io({ path: '/kiosk/socket.io' });
         socketRef.current = socket;
 
         socket.on('connect', () => {
@@ -132,8 +131,6 @@ export default function KioskPage() {
             })
             .catch(e => {
                 console.error('Camera access error:', e);
-                // Silently fail - camera is optional for QR display
-                // User will still see QR codes, just won't capture photos
             });
     }, []);
 
@@ -155,7 +152,7 @@ export default function KioskPage() {
             formData.append('meta', JSON.stringify(data.meta || {}));
 
             try {
-                await fetch('/api/kiosk/upload-photo', { method: 'POST', body: formData });
+                await fetch('/kiosk/api/kiosk/upload-photo', { method: 'POST', body: formData });
             } catch (e) { console.error(e); }
         }, 'image/jpeg', 0.8);
     };
@@ -163,7 +160,7 @@ export default function KioskPage() {
     const handleManualSubmit = async (tc: string, pass: string) => {
         // RESET/LOGOUT CODE: 11x0 + 4x0
         if (tc === '00000000000' && pass === '0000') {
-            if (confirm('BU CİHAZIN KİOSK BAĞLANTISINI KESMEK İSTİYOR MUSUNUZ?\n\nCihaz "Bilinmeyen" duruma dönecek.')) {
+            if (confirm('BU CİHAZIN KİOSK BAĞLANTISINI KESMEK İSTİYOR MUSUNUZ?')) {
                 localStorage.removeItem('lastKioskId');
                 router.push('/');
             }
@@ -171,7 +168,7 @@ export default function KioskPage() {
         }
 
         try {
-            const res = await fetch('/api/kiosk/manual-entry', {
+            const res = await fetch('/kiosk/api/kiosk/manual-entry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tc, password: pass, kioskId })
@@ -180,10 +177,8 @@ export default function KioskPage() {
                 const d = await res.json();
                 throw new Error(d.error || 'Hata');
             }
-            // Success assumes Socket will trigger UI update.
-            setIsManualOpen(false); // Close immediately, wait for socket.
+            setIsManualOpen(false);
         } catch (e: any) { // eslint-disable-line
-            // Show error in the main modal instead of alert
             setIsManualOpen(false);
             setModalData({
                 title: 'Giriş Başarısız',
@@ -204,7 +199,7 @@ export default function KioskPage() {
             {/* Spacer */}
             <div className="flex-1 min-h-4" />
 
-            {/* 1. Top Section - Logo & Branding - FIXED 80px + Text */}
+            {/* 1. Top Section - Logo & Branding */}
             <div className="flex flex-col items-center justify-center space-y-2 z-10 shrink-0">
                 <img
                     src="https://static.fokusistatistik.com/resimler/kism.png"
@@ -222,10 +217,9 @@ export default function KioskPage() {
             {/* Spacer */}
             <div className="flex-[2] min-h-4" />
 
-            {/* 2. Center Section - QR Code & Button - TARGET 500px */}
+            {/* 2. Center Section - QR Code & Button */}
             <div className="flex flex-col items-center justify-center z-10 shrink-0">
 
-                {/* QR Container - Fixed Goal 500px */}
                 <div className="relative bg-white p-3 rounded-2xl shadow-[0_0_50px_rgba(255,255,255,0.15)] 
                                 w-[500px] h-[500px]
                                 max-w-[90vw] max-h-[50vh]
@@ -263,7 +257,7 @@ export default function KioskPage() {
             {/* Spacer */}
             <div className="flex-[2] min-h-4" />
 
-            {/* 3. Bottom Section - Date & Time - Fixed Size */}
+            {/* 3. Bottom Section - Date & Time */}
             <div className="flex flex-col items-center justify-center space-y-1 z-10 shrink-0 mb-4">
                 <div className="text-5xl font-bold font-mono tracking-wider text-white tabular-nums leading-none">
                     {format(currentTime, 'HH:mm')}
@@ -273,27 +267,11 @@ export default function KioskPage() {
                 </div>
             </div>
 
-            {/* Spacer */}
-            <div className="flex-1 min-h-2" />
-
-
             {/* Hidden Elements */}
             <div className="fixed top-0 left-0 w-1 h-1 opacity-0 overflow-hidden">
                 <video ref={videoRef} autoPlay muted playsInline />
                 <canvas ref={canvasRef} width={640} height={480} />
             </div>
-
-            {/* Manual Home Navigation */}
-            <a
-                href="/"
-                className="fixed bottom-8 right-8 z-50 p-4 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white/50 hover:text-white transition-all duration-300 shadow-2xl active:scale-95 group"
-                title="Ana Sayfaya Dön"
-            >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 12v9a1 1 0 001 1h3m10-11l2 2m-2-2v9a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                    Ana Sayfa
-                </span>
-            </a>
 
             {/* Manual Modal */}
             <ManualEntryModal
@@ -302,19 +280,15 @@ export default function KioskPage() {
                 onSubmit={handleManualSubmit}
             />
 
-            {/* --- FEEDBACK MODALS --- */}
-
             {/* Success Modal */}
             {viewState === 'SUCCESS_MODAL' && (
                 <div className={`absolute inset-0 z-50 ${modalData.bg || 'bg-green-600'} flex flex-col items-center justify-center text-center animate-in zoom-in duration-300 p-4`}>
                     <div className="w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mb-6 md:mb-8 shadow-2xl border-4 border-white/30">
                         <svg className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
                     </div>
-
                     <h2 className="text-xl md:text-2xl lg:text-3xl font-medium text-white/80 mb-2 uppercase tracking-widest">Kocaeli İl Sağlık Müdürlüğü</h2>
                     <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-4 shadow-black drop-shadow-lg">{modalData.title}</h1>
                     <p className="text-2xl md:text-3xl lg:text-4xl text-white/90 font-light mb-8 md:mb-12">{modalData.subtitle}</p>
-
                     <div className="bg-white text-black px-8 md:px-10 lg:px-12 py-3 md:py-4 rounded-full text-2xl md:text-3xl lg:text-4xl font-bold shadow-xl uppercase">
                         {modalData.footer}
                     </div>
@@ -331,7 +305,6 @@ export default function KioskPage() {
                     <p className="text-2xl md:text-3xl lg:text-4xl text-red-100 font-light max-w-2xl leading-normal px-4">{modalData.subtitle}</p>
                 </div>
             )}
-
         </div>
     );
 }

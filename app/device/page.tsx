@@ -143,7 +143,7 @@ function QRMode({ config, onResetRequest }: { config: { id: string, name: string
     const fetchToken = useCallback(async () => {
         if (viewState === 'FATAL_ERROR') return;
         try {
-            const res = await fetch(`/api/kiosk/qr-token?kioskId=${config.id}`);
+            const res = await fetch(`/kiosk/api/kiosk/qr-token?kioskId=${config.id}`);
             const data = await res.json();
             if (data.token) {
                 setToken(data.token);
@@ -163,7 +163,7 @@ function QRMode({ config, onResetRequest }: { config: { id: string, name: string
     useEffect(() => {
         if (viewState === 'FATAL_ERROR') return;
 
-        const socket = io({ path: '/socket.io' });
+        const socket = io({ path: '/kiosk/socket.io' });
         socketRef.current = socket;
 
         socket.on('connect', () => {
@@ -235,14 +235,14 @@ function QRMode({ config, onResetRequest }: { config: { id: string, name: string
             formData.append('status', 'SUCCESS');
             formData.append('meta', JSON.stringify(data.meta || {}));
             try {
-                await fetch('/api/kiosk/upload-photo', { method: 'POST', body: formData });
+                await fetch('/kiosk/api/kiosk/upload-photo', { method: 'POST', body: formData });
             } catch (e) { console.error(e); }
         }, 'image/jpeg', 0.8);
     };
 
     const handleManualSubmit = async (tc: string, pass: string) => {
         try {
-            const res = await fetch('/api/kiosk/manual-entry', {
+            const res = await fetch('/kiosk/api/kiosk/manual-entry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tc, password: pass, kioskId: config.id })

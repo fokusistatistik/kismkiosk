@@ -35,7 +35,7 @@ export default function LogsPage() {
 
     // Socket Listener
     useEffect(() => {
-        const socket = io({ path: '/socket.io' });
+        const socket = io({ path: '/kiosk/socket.io' });
 
         socket.on('NEW_LOG', (newLog: Log) => {
             setLogs(prev => [newLog, ...prev]);
@@ -83,8 +83,8 @@ export default function LogsPage() {
                                     </td>
                                     <td className="py-3 px-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.status === 'SUCCESS'
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                                             }`}>
                                             {log.status === 'SUCCESS' ? 'Başarılı' : 'Reddedildi'}
                                         </span>
