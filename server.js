@@ -26,12 +26,17 @@ app.prepare().then(() => {
     const httpServer = createServer(server);
     const io = new Server(httpServer, {
         cors: {
-            origin: "*",
-            methods: ["GET", "POST"]
+            origin: ["https://doku.fokusistatistik.com", "https://kiosk.fokusistatistik.com"],
+            methods: ["GET", "POST"],
+            credentials: true
         }
     });
 
-    server.use(cors());
+    server.use(cors({
+        origin: ["https://doku.fokusistatistik.com", "https://kiosk.fokusistatistik.com"],
+        methods: ["GET", "POST", "OPTIONS"],
+        credentials: true
+    }));
     server.use(express.json());
     server.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 

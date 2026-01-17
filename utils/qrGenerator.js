@@ -17,11 +17,11 @@ function generateTimeWindowQR(kioskId, locationId = 'UNKNOWN', kioskName = 'UNKN
         kid: kioskId,
         loc: locationId,
         nam: kioskName,
-        iat: now
+        iat: now,
+        exp: now + 60 // 60 seconds expiration as requested
     };
 
     // Sign with secret
-    // Expires in technically never (we check iat manually) but let's say 1h just in case
     return jwt.sign(payload, SECRET);
 }
 
