@@ -45,7 +45,8 @@ app.prepare().then(() => {
     }));
 
     kioskRouter.use(express.json());
-    kioskRouter.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+    kioskRouter.use(express.json());
+    // Static uploads moved to server.use below for better path handling
 
     const storage = multer.diskStorage({
         destination: (req, file, cb) => cb(null, 'public/uploads/'),
@@ -78,7 +79,9 @@ app.prepare().then(() => {
 
     // --- API Endpoints (inside /kiosk prefix) ---
 
-    kioskRouter.post('/api/admin/login', (req, res) => {
+    // --- API Endpoints (Prefixes removed, router mounted at /api and /kiosk/api) ---
+
+    kioskRouter.post('/admin/login', (req, res) => {
         const { username, password } = req.body;
         if (username === 'kocaeliilsaglik' && password === 'Kocaeliilsaglik41.Kocaeli') {
             const token = jwt.sign({ username, role: 'ADMIN' }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
@@ -87,7 +90,7 @@ app.prepare().then(() => {
         return res.status(401).json({ error: 'Geçersiz bilgiler' });
     });
 
-    kioskRouter.get('/api/kiosk/qr-token', async (req, res) => {
+    kioskRouter.get('/kiosk/qr-token', async (req, res) => {
         const { kioskId, name, locationId } = req.query;
         if (!kioskId) return res.status(400).json({ error: 'Missing kioskId' });
         try {
@@ -109,7 +112,7 @@ app.prepare().then(() => {
         }
     });
 
-    kioskRouter.post('/api/mobile/scan', async (req, res) => {
+    kioskRouter.post('/mobile/scan', async (req, res) => {
         const { qr_token, user_id, user_tc, user_name, device_info } = req.body;
         const tcNo = user_tc || user_id;
         const deviceUuid = device_info?.uuid;
@@ -145,7 +148,7 @@ app.prepare().then(() => {
         }
     });
 
-    kioskRouter.post('/api/kiosk/manual-entry', async (req, res) => {
+    kioskRouter.post('/kiosk/manual-entry', async (req, res) => {
         const { tc, password, kioskId } = req.body;
         try {
             const user = await prisma.user.findUnique({ where: { tc_no: tc } });
@@ -157,7 +160,7 @@ app.prepare().then(() => {
         }
     });
 
-    kioskRouter.post('/api/kiosk/upload-photo', upload.single('photo'), async (req, res) => {
+    kioskRouter.post('/kiosk/upload-photo', upload.single('photo'), async (req, res) => {
         try {
             const { kioskId, userId, status, meta } = req.body;
             const parsedMeta = meta ? JSON.parse(meta) : {};
@@ -182,10 +185,13 @@ app.prepare().then(() => {
         }
     });
 
+    // Static Files (Accessible at /uploads/...)
+    server.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+    server.use('/kiosk/uploads', express.static(path.join(__dirname, 'public/uploads'))); // Legacy support
+
     // Mount Router
-    // Mount Router (Support both root and /kiosk for backward compatibility)
-    server.use('/', kioskRouter);
-    server.use('/kiosk', kioskRouter);
+    server.use('/api', kioskRouter);        // New Frontend: /api/...
+    server.use('/kiosk/api', kioskRouter);  // Mobile App: /kiosk/api/...
 
     // Fallback to Next.js
     server.all('*', (req, res) => {
