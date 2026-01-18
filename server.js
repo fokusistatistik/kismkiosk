@@ -194,7 +194,7 @@ app.prepare().then(() => {
     server.use('/kiosk/api', kioskRouter);  // Mobile App: /kiosk/api/...
 
     // Fallback to Next.js
-    server.all('*', (req, res) => {
+    server.all('(.*)', (req, res) => {
         return handle(req, res);
     });
 
