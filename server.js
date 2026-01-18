@@ -130,7 +130,7 @@ app.prepare().then(() => {
                     message: "TEST MODU: Bağlantı Başarılı, Hoş Geldiniz!"
                 });
 
-                return res.json({ success: true, message: "TEST MODU: Bağlantı Başarılı!" });
+                return res.json({ success: true, message: "Giriş Başarılı" });
             }
             if (!validation.valid) return res.status(400).json({ success: false, message: 'QR Geçersiz' });
             const user = await prisma.user.findUnique({ where: { tc_no: tcNo } });
@@ -138,6 +138,7 @@ app.prepare().then(() => {
                 io.to(`room_kiosk_${validation.kioskId}`).emit('SCAN_ERROR', { message: 'Kullanıcı Bulunamadı' });
                 return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
             }
+            // processEntry handles the socket emit and response
             await processEntry(user.id, deviceUuid, 'QR', validation.kioskId, res, user_name);
         } catch (err) {
             res.status(500).json({ success: false, message: 'Error' });
@@ -214,7 +215,7 @@ app.prepare().then(() => {
             });
 
             io.to(`room_kiosk_${kioskIdOverride}`).emit('TRIGGER_CAMERA', { user_id: user.id, user_name: displayUserName, meta: { direction, kioskId: kioskIdOverride } });
-            res.json({ success: true, message: 'Giriş Onaylandı', user_name: displayUserName });
+            res.json({ success: true, message: 'Giriş Başarılı' });
         } catch (e) {
             res.status(500).json({ success: false });
         }
