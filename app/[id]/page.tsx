@@ -99,6 +99,23 @@ export default function KioskPage() {
             }, 2000);
         });
 
+        // Visual Feedback: guide compliance
+        socket.on('access_granted', (data: { user_name: string, message: string }) => {
+            setModalData({
+                title: data.user_name,
+                subtitle: '',
+                footer: data.message || 'Hoşgeldiniz',
+                bg: 'bg-green-600'
+            });
+            setViewState('SUCCESS_MODAL');
+            setIsManualOpen(false);
+
+            setTimeout(() => {
+                setViewState('IDLE');
+                fetchToken();
+            }, 2000);
+        });
+
         // Visual Feedback: Error
         socket.on('SCAN_ERROR', (data: { message: string }) => {
             setModalData({

@@ -68,8 +68,10 @@ app.prepare().then(() => {
                     });
                 }
                 socket.join(`room_kiosk_${kioskId}`);
+                socket.join(kioskId); // Simplified room name for v2 compatibility
             } catch (e) {
                 socket.join(`room_kiosk_${kioskId}`);
+                socket.join(kioskId);
             }
         });
     });
@@ -121,6 +123,13 @@ app.prepare().then(() => {
                     user_title: "Test Modu Aktif",
                     direction: "IN"
                 });
+
+                // Align with v2 guide
+                io.to(kioskId).emit('access_granted', {
+                    user_name: user_name || "TEST USER",
+                    message: "TEST MODU: Bağlantı Başarılı, Hoş Geldiniz!"
+                });
+
                 return res.json({ success: true, message: "TEST MODU: Bağlantı Başarılı!" });
             }
             if (!validation.valid) return res.status(400).json({ success: false, message: 'QR Geçersiz' });
@@ -197,6 +206,13 @@ app.prepare().then(() => {
             if (lastLog) direction = lastLog.direction === 'IN' ? 'OUT' : 'IN';
             const displayUserName = mobileUserName || `${user.name} ${user.surname}`;
             io.to(`room_kiosk_${kioskIdOverride}`).emit('SCAN_SUCCESS', { user_name: displayUserName, user_title: user.title, direction });
+
+            // Align with v2 guide
+            io.to(kioskIdOverride).emit('access_granted', {
+                user_name: displayUserName,
+                message: direction === 'OUT' ? 'Güle Güle' : 'Hoş Geldiniz'
+            });
+
             io.to(`room_kiosk_${kioskIdOverride}`).emit('TRIGGER_CAMERA', { user_id: user.id, user_name: displayUserName, meta: { direction, kioskId: kioskIdOverride } });
             res.json({ success: true, message: 'Giriş Onaylandı', user_name: displayUserName });
         } catch (e) {
