@@ -8,21 +8,17 @@ import { ArrowRight, X, Monitor, Cpu, Type } from 'lucide-react';
 export default function Home() {
   const router = useRouter();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Kiosk Setup State
-  const [showKioskModal, setShowKioskModal] = useState(false);
-  const [inputKioskId, setInputKioskId] = useState('');
-  const [inputKioskName, setInputKioskName] = useState('');
+  // No local state needed for setup anymore
 
   useEffect(() => {
-    // Only auto-redirect if a kiosk was previously active
-    const lastKioskId = localStorage.getItem('lastKioskId');
+    // Only auto-redirect if kiosk was previously active
+    const lastKioskId = localStorage.getItem('kiosk_config');
     if (!lastKioskId) return;
 
     const resetTimer = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        router.push(`/${lastKioskId}`);
+        router.push('/qr');
       }, 10000); // 10 seconds
     };
 
@@ -37,23 +33,7 @@ export default function Home() {
   }, [router]);
 
   const handleKioskMode = () => {
-    const lastKioskId = localStorage.getItem('lastKioskId');
-    if (lastKioskId) {
-      router.push(`/${lastKioskId}`);
-      return;
-    }
-    // No auth required, just open setup
-    setShowKioskModal(true);
-  };
-
-  const handleStartKiosk = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputKioskId || !inputKioskName) return;
-
-    localStorage.setItem('lastKioskId', inputKioskId);
-    localStorage.setItem('kioskName', inputKioskName);
-
-    router.push(`/${inputKioskId}`);
+    router.push('/qr');
   };
 
   return (
@@ -92,64 +72,7 @@ export default function Home() {
       </div>
 
       {/* Kiosk Setup Modal */}
-      {showKioskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200 border border-neutral-800">
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-center bg-gray-50 dark:bg-neutral-900">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-blue-500" />
-                Kiosk Kurulumu
-              </h3>
-              <button onClick={() => setShowKioskModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <form onSubmit={handleStartKiosk} className="p-6 space-y-4">
-              <p className="text-sm text-gray-400 mb-4">
-                Bu cihazı sisteme tanıtmak için bir kimlik ve isim belirleyin. Bu bilgiler QR kod içinde kullanılacaktır.
-              </p>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1.5 ml-1">Kiosk ID (Unique)</label>
-                <div className="relative">
-                  <Cpu className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="text"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 bg-neutral-800 border-neutral-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-600 font-mono"
-                    placeholder="cihaz-01"
-                    value={inputKioskId}
-                    onChange={e => setInputKioskId(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1.5 ml-1">Görünür İsim</label>
-                <div className="relative">
-                  <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="text"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 bg-neutral-800 border-neutral-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-600"
-                    placeholder="Ana Giriş Turnikesi"
-                    value={inputKioskName}
-                    onChange={e => setInputKioskName(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium transition-colors shadow-lg shadow-blue-600/20 mt-2"
-              >
-                Kiosku Başlat
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
