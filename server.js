@@ -183,7 +183,9 @@ app.prepare().then(() => {
     });
 
     // Mount Router
+    // Mount Router (Support both root and /kiosk for backward compatibility)
     server.use('/', kioskRouter);
+    server.use('/kiosk', kioskRouter);
 
     // Fallback to Next.js
     server.all('*', (req, res) => {
