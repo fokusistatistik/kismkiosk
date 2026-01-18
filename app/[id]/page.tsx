@@ -50,7 +50,7 @@ export default function KioskPage() {
 
             // Note: with basePath /kiosk, this fetch to /api might absolute to root or respect base.
             // Next.js client-side fetch usually respects basePath if using relative paths.
-            const res = await fetch(`/kiosk/api/kiosk/qr-token?kioskId=${kioskId}${queryName}`);
+            const res = await fetch(`/api/kiosk/qr-token?kioskId=${kioskId}${queryName}`);
             const data = await res.json();
             if (data.token) {
                 setToken(data.token);
@@ -72,7 +72,7 @@ export default function KioskPage() {
     // Socket Logic
     useEffect(() => {
         // Connect to same host
-        const socket = io({ path: '/kiosk/socket.io' });
+        const socket = io({ path: '/socket.io' });
         socketRef.current = socket;
 
         socket.on('connect', () => {
@@ -169,7 +169,7 @@ export default function KioskPage() {
             formData.append('meta', JSON.stringify(data.meta || {}));
 
             try {
-                await fetch('/kiosk/api/kiosk/upload-photo', { method: 'POST', body: formData });
+                await fetch('/api/kiosk/upload-photo', { method: 'POST', body: formData });
             } catch (e) { console.error(e); }
         }, 'image/jpeg', 0.8);
     };
@@ -185,7 +185,7 @@ export default function KioskPage() {
         }
 
         try {
-            const res = await fetch('/kiosk/api/kiosk/manual-entry', {
+            const res = await fetch('/api/kiosk/manual-entry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tc, password: pass, kioskId })

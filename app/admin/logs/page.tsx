@@ -35,7 +35,7 @@ export default function LogsPage() {
 
     // Socket Listener
     useEffect(() => {
-        const socket = io({ path: '/kiosk/socket.io' });
+        const socket = io({ path: '/socket.io' });
 
         socket.on('NEW_LOG', (newLog: Log) => {
             setLogs(prev => [newLog, ...prev]);

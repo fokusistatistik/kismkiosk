@@ -27,7 +27,7 @@ app.prepare().then(() => {
 
     // Socket.io with path prefix
     const io = new Server(httpServer, {
-        path: '/kiosk/socket.io',
+        path: '/socket.io',
         cors: {
             origin: ["https://doku.fokusistatistik.com", "https://kiosk.fokusistatistik.com"],
             methods: ["GET", "POST"],
@@ -182,7 +182,7 @@ app.prepare().then(() => {
     });
 
     // Mount Router
-    server.use('/kiosk', kioskRouter);
+    server.use('/', kioskRouter);
 
     // Fallback to Next.js
     server.all('*', (req, res) => {
@@ -223,6 +223,6 @@ app.prepare().then(() => {
     httpServer.listen(port, (err) => {
         if (err) throw err;
         console.log(`> Server running on port: ${port}`);
-        console.log(`> App available at http://localhost:${port}/kiosk`);
+        console.log(`> App available at http://localhost:${port}`);
     });
 });
